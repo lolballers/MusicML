@@ -5,6 +5,10 @@ import glob
 import argparse
 import os
 import shutil
+import tqdm
+import sklearn.preprocessing
+import sys
+import typing
 
 parser = argparse.ArgumentParser(allow_abbrev=False)  # for safety
 parser.add_argument("--overwrite", help="refresh any files that have already been converted",
@@ -92,6 +96,23 @@ def event_sequence_to_midi(event_sequence: np.ndarray) -> mido.MidiFile:
                                       time=int(event[3] * _writing_ticks_per_beat / _writing_tempo)
                                       ))
     return mid
+
+
+def load_padded_input_event_sequences() -> typing.Tuple[np.ndarray, sklearn.preprocessing.MinMaxScaler]:
+    scaler = sklearn.preprocessing.MinMaxScaler()
+    jagged_sequences = []
+    for in_path in tqdm.tqdm(glob.glob(os.path.join('.', 'input', 'event_sequence_v{}'.format(_format_version),
+                                                    '*.seq{}'.format(_format_version))),
+                             desc="loading event sequences", file=sys.stdout):
+        event_sequence = np.loadtxt(in_path, dtype=_dtype)
+        scaler.partial_fit(event_sequence)
+        jagged_sequences.append(event_sequence)
+
+    max_len = max(seq.shape[0] for seq in jagged_sequences)
+    smooth_sequences = np.zeros((len(jagged_sequences), max_len, 4), dtype=np.float32)
+    for i, seq in tqdm.tqdm(enumerate(jagged_sequences), desc="padding/scaling into 3D 0-1 valued array", file=sys.stdout):
+        smooth_sequences[i, :len(seq)] += scaler.transform(seq)
+    return smooth_sequences, scaler
 
 
 def _test_event_sequence_midi():
