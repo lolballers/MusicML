@@ -11,11 +11,11 @@ verbosity = 1
 songs = []
 max_songs = 1
 _i = 0
-for path in glob('./samples/*.mid'):
+for path in glob('./input/*.mid'):
     pass
 
 
-mid = MidiFile('./samples/140.mid')
+mid = MidiFile('./input/140.mid')
 for i, track in enumerate(mid.tracks):
     print('Track {}: {}'.format(i, track.name))
     for msg in track:

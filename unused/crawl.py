@@ -28,7 +28,7 @@ for page in pages:
             url = base + match
             url = urllib.parse.quote(url.encode('utf8'), ':/')
             try:
-                urllib.request.urlretrieve(url, './samples/' + match.split('/')[-1])
+                urllib.request.urlretrieve(url, './input/' + match.split('/')[-1])
                 print('succeeded on {}'.format(url))
             except urllib.error.HTTPError:
                 print('failed on {}'.format(url))

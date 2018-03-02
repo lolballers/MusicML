@@ -1,7 +1,7 @@
 import mido
 import numpy as np
 
-from unused import midi_manipulation
+### THIS DOES NOT WORK AS OF 3/1/18 AND I AM NOT TAKING THE TIME TO FIX IT BECAUSE WE DON'T USE IT -JRST ###
 
 # NOTES ABOUT FORMATTING
 # Right now, we only use MIDI type 0 files, which contain all messages in 1 track.
@@ -116,7 +116,7 @@ def note_state_matrix_to_midi(note_state_matrix: np.ndarray) -> mido.MidiFile:
 
     return mid
 
-mid = mido.MidiFile('./samples/midi/elise_format0.mid')
+mid = mido.MidiFile('./input/midi/elise_format0.mid')
 note_state_matrix_to_midi(midi_to_note_state_matrix(mid)).save('./elise_out.mid')
 
-midi_manipulation.noteStateMatrixToMidi(midi_manipulation.midiToNoteStateMatrix('./samples/midi/elise_format0.mid'), name='./elise_out_eli.mid')
+midi_manipulation.noteStateMatrixToMidi(midi_manipulation.midiToNoteStateMatrix('./input/midi/elise_format0.mid'), name='./elise_out_eli.mid')
