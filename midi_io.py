@@ -9,6 +9,7 @@ import tqdm
 import sklearn.preprocessing
 import sys
 import typing
+import operator
 
 parser = argparse.ArgumentParser(allow_abbrev=False)  # for safety
 parser.add_argument("--overwrite", help="refresh any files that have already been converted",
@@ -42,7 +43,7 @@ def midi_to_event_sequence(mid: mido.MidiFile) -> np.ndarray:
     assert mid.type <= 1  # no one likes type 2 files, they're dumb
 
     tempo = 500000  # default before any set_tempo according to MIDI standard
-    all_events = itertools.chain.from_iterable(mid.tracks)
+    all_events = max(mid.tracks, key=len)
     all_events = [event for event in all_events if
                   event.type == 'set_tempo' or event.type == 'note_on' or event.type == 'control_change']
     sequence_length = sum([1 for event in all_events if event.type == 'note_on' or event.type == 'control_change'])
@@ -98,11 +99,11 @@ def event_sequence_to_midi(event_sequence: np.ndarray) -> mido.MidiFile:
     return mid
 
 
-def load_padded_input_event_sequences() -> typing.Tuple[np.ndarray, sklearn.preprocessing.MinMaxScaler]:
+def load_padded_input_event_sequences(basename='*') -> typing.Tuple[np.ndarray, sklearn.preprocessing.MinMaxScaler]:
     scaler = sklearn.preprocessing.MinMaxScaler()
     jagged_sequences = []
     for in_path in tqdm.tqdm(glob.glob(os.path.join('.', 'input', 'event_sequence_v{}'.format(_format_version),
-                                                    '*.seq{}'.format(_format_version))),
+                                                    '{}.seq{}'.format(basename, _format_version))),
                              desc="loading event sequences", file=sys.stdout):
         event_sequence = np.loadtxt(in_path, dtype=_dtype)
         scaler.partial_fit(event_sequence)
@@ -116,8 +117,10 @@ def load_padded_input_event_sequences() -> typing.Tuple[np.ndarray, sklearn.prep
 
 
 def _test_event_sequence_midi():
-    mid = mido.MidiFile('./input/midi/elise_format0.mid')
-    event_sequence_to_midi(midi_to_event_sequence(mid)).save('./elise_out.mid')
+    mid = mido.MidiFile('./input/midi/alb_esp1.mid')
+    event_sequence_to_midi(midi_to_event_sequence(mid)).save('./alb_esp1_out.mid')
+    mid = mido.MidiFile('./alb_esp1_out.mid')
+    mid.save('./alb_esp1_out2.mid')
 
 
 def _empty_directory(folder):
