@@ -17,7 +17,7 @@ parser.add_argument("--overwrite", help="refresh any files that have already bee
 parser.add_argument("--delete", help="empty the target directory before parsing any files",
                     action="store_true")
 parser.add_argument("direction", help="which direction of data to parse files from",
-                    action="store", choices=['in', 'out', 'both'])
+                    action="store", choices=['input', 'output', 'both'])
 
 # Important Controls:
 # 7 = Volume
@@ -132,7 +132,7 @@ if __name__ == '__main__':
         if flags.delete:
             _empty_directory(os.path.join('.', 'input', 'event_sequence_v{0}'.format(_format_version)))
 
-        for in_path in glob.glob(os.path.join('.', 'input', 'midi', '*.mid')):
+        for in_path in glob.glob(os.path.join('.', 'input', 'midi', '*format0.mid')):
             out_path = os.path.join('.', 'input', 'event_sequence_v{0}'.format(_format_version),
                                     '{}.seq{}'.format(os.path.splitext(os.path.basename(in_path))[0], _format_version))
 

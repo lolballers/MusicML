@@ -11,18 +11,37 @@ import numpy as np
 # event_sequences, scaler = midi_io.load_padded_input_event_sequences(basename='clementi*format0')
 # print(event_sequences)
 
-control, value, velocity, time = midi_io.load_everything()
-controlY = np.roll(control, 1)
-valueY = np.roll(value, 1)
-velocityY = np.roll(velocity, 1)
-timeY = np.roll(time, 1)
+data, scaler = midi_io.load_padded_input_event_sequences(basename='*');
+print(data)
 
+control = []
+value = []
+velocity = []
+time = []
+
+for song in data:
+    for note in song:
+        control.append(note[0])
+        value.append(note[1])
+        velocity.append(note[2])
+        time.append(note[3])
+
+control = np.asarray(control)
+value = np.asarray(value)
+velocity = np.asarray(velocity)
+time = np.asarray(time)
+
+# control, value, velocity, time = midi_io.load_everything()
+controlY = np.roll(control, 4)
+valueY = np.roll(value, 4)
+velocityY = np.roll(velocity, 4)
+timeY = np.roll(time, 4)
 
 controlmodel = k.models.Sequential();
-controlmodel.add(k.layers.Embedding(input_dim = 3, output_dim = 64, input_length=1));
+controlmodel.add(k.layers.Embedding(input_dim = 2, output_dim = 64, input_length=1));
 controlmodel.add(k.layers.LSTM(128, activation='tanh', recurrent_activation='hard_sigmoid', dropout=0.2, recurrent_dropout=0.2, return_sequences = True));
 controlmodel.add(k.layers.Flatten());
-controlmodel.add(k.layers.Dense(1, activation="softmax"));
+controlmodel.add(k.layers.Dense(1, activation="sigmoid"));
 controlmodel.compile(loss='mean_squared_error', optimizer='rmsprop', metrics=['accuracy']);
 
 controlmodel.fit(control, controlY, epochs=1, verbose=1);
@@ -30,16 +49,14 @@ starter = control[0:4]
 controlsong = [starter];
 for ii in range(0,100):
     y = controlmodel.predict(controlsong[ii]);
-    controlsong.append(y)
+    controlsong.append(np.rint(y))
 
 polcontrolsong = []
 for array in controlsong:
     for val in array:
         polcontrolsong.append(val)
 
-for i in polcontrolsong:
-    if(i==0):
-        print("uh oh")
+print(polcontrolsong)
 
 valuemodel = k.models.Sequential();
 valuemodel.add(k.layers.Embedding(input_dim = 1000, output_dim = 128, input_length=1));
@@ -118,8 +135,6 @@ for ii in range(0, len(poltimesong)):
     song.append(note)
 
 print(song)
-print(midi_io.midi_to_event_sequence(mido.MidiFile(".//input//midi//alb_esp1.mid")))
-
 midi_io.event_sequence_to_midi(song)
 
 # model = keras.models.Sequential()
