@@ -40,7 +40,7 @@ def midi_to_event_sequence(mid: mido.MidiFile) -> np.ndarray:
     :param mid: a mido.MidiFile reference to the file
     :return: an np.ndarray of shape (sequence_length, 4), dtype configured in the header
     """
-    assert mid.type <= 1  # no one likes type 2 files, they're dumb
+    assert mid.type == 0  # no one likes type 2 files, they're dumb
 
     tempo = 500000  # default before any set_tempo according to MIDI standard
     all_events = max(mid.tracks, key=len)
@@ -56,9 +56,8 @@ def midi_to_event_sequence(mid: mido.MidiFile) -> np.ndarray:
         if event.type == 'set_tempo':
             tempo = event.tempo
         elif event.type == 'note_on' or event.type == 'control_change':
-
             if event.type == 'note_on':
-                event_sequence[i] = np.array((1, event.note, event.velocity, dt/10000), dtype=_dtype)
+                event_sequence[i] = np.array((1, event.note, event.velocity, dt), dtype=_dtype)
             elif event.type == 'control_change':
                 event_sequence[i] = np.array((2, event.control, event.value, dt), dtype=_dtype)
 
@@ -88,7 +87,7 @@ def event_sequence_to_midi(event_sequence: np.ndarray) -> mido.MidiFile:
             track.append(mido.Message('note_on',
                                       note=int(event[1]),
                                       velocity=int(event[2]),
-                                      time=int(event[3] * 10000 * _writing_ticks_per_beat / _writing_tempo)
+                                      time=int(event[3] * _writing_ticks_per_beat / _writing_tempo)
                                       ))
         if event[0] == 2:  # control_change
             track.append(mido.Message('control_change',
@@ -96,66 +95,24 @@ def event_sequence_to_midi(event_sequence: np.ndarray) -> mido.MidiFile:
                                       value=int(event[2]),
                                       time=int(event[3] * _writing_ticks_per_beat / _writing_tempo)
                                       ))
-    mid.save("./generated.mid")
     return mid
-
-# def load_everything():
-#     songs = glob.glob(os.path.join('.', 'input', 'midi2', '*.mid'))
-#     X = []
-#     Y = []
-#     for in_path in songs:
-#         event_sequence = midi_to_event_sequence(mido.MidiFile(in_path))
-#         X.append(event_sequence[0:30])
-#         Y.append(np.roll(event_sequence[0:30], 1))
-#
-#     return np.asarray(X), np.asarray(Y)
-
-def load_everything():
-    songs = glob.glob(os.path.join('.', 'input', 'midi2', '*.mid'))
-    control = []
-    value = []
-    velocity = []
-    time = []
-
-    for in_path in songs:
-        event_sequence = midi_to_event_sequence(mido.MidiFile(in_path))
-        for note in event_sequence:
-            control.append(note[0])
-            value.append(note[1])
-            velocity.append(note[2])
-            time.append(note[3])
-            if(note[3]>1000):
-                print(in_path)
-                print(note[3])
-
-    return np.asarray(control), np.asarray(value), np.asarray(velocity), np.asarray(time)
 
 
 def load_padded_input_event_sequences(basename='*') -> typing.Tuple[np.ndarray, sklearn.preprocessing.MinMaxScaler]:
     scaler = sklearn.preprocessing.MinMaxScaler()
     jagged_sequences = []
-    for in_path in glob.glob(os.path.join('.', 'input', 'midi', '{}.mid'.format(basename, _format_version))):
-        event_sequence = midi_to_event_sequence(mido.MidiFile(in_path))
+    for in_path in tqdm.tqdm(glob.glob(os.path.join('.', 'input', 'event_sequence_v{}'.format(_format_version),
+                                                    '{}.seq{}'.format(basename, _format_version))),
+                             desc="loading event sequences", file=sys.stdout):
+        event_sequence = np.loadtxt(in_path, dtype=_dtype)
         scaler.partial_fit(event_sequence)
         jagged_sequences.append(event_sequence)
-    # for in_path in tqdm.tqdm(glob.glob(os.path.join('.', 'input', 'event_sequence_v{}'.format(_format_version),
-    #                                                 '{}.seq{}'.format(basename, _format_version))),
-    #                          desc="loading event sequences", file=sys.stdout):
-    #     event_sequence = np.loadtxt(in_path, dtype=_dtype)
-    #     scaler.partial_fit(event_sequence)
-    #     jagged_sequences.append(event_sequence)
+
     max_len = max(seq.shape[0] for seq in jagged_sequences)
     smooth_sequences = np.zeros((len(jagged_sequences), max_len, 4), dtype=np.float32)
     for i, seq in tqdm.tqdm(enumerate(jagged_sequences), desc="padding/scaling into 3D 0-1 valued array", file=sys.stdout):
         smooth_sequences[i, :len(seq)] += scaler.transform(seq)
     return smooth_sequences, scaler
-
-
-def _test_event_sequence_midi():
-    mid = mido.MidiFile('./input/midi/alb_esp1.mid')
-    event_sequence_to_midi(midi_to_event_sequence(mid)).save('./alb_esp1_out.mid')
-    mid = mido.MidiFile('./alb_esp1_out.mid')
-    mid.save('./alb_esp1_out2.mid')
 
 
 def _empty_directory(folder):
