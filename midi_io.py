@@ -40,7 +40,7 @@ def midi_to_event_sequence(mid: mido.MidiFile) -> np.ndarray:
     :param mid: a mido.MidiFile reference to the file
     :return: an np.ndarray of shape (sequence_length, 4), dtype configured in the header
     """
-    assert mid.type == 0  # no one likes type 2 files, they're dumb
+    assert mid.type <= 1  # no one likes type 2 files, they're dumb
 
     tempo = 500000  # default before any set_tempo according to MIDI standard
     all_events = max(mid.tracks, key=len)
@@ -56,6 +56,7 @@ def midi_to_event_sequence(mid: mido.MidiFile) -> np.ndarray:
         if event.type == 'set_tempo':
             tempo = event.tempo
         elif event.type == 'note_on' or event.type == 'control_change':
+
             if event.type == 'note_on':
                 event_sequence[i] = np.array((1, event.note, event.velocity, dt/10000), dtype=_dtype)
             elif event.type == 'control_change':
@@ -148,6 +149,13 @@ def load_padded_input_event_sequences(basename='*') -> typing.Tuple[np.ndarray, 
     for i, seq in tqdm.tqdm(enumerate(jagged_sequences), desc="padding/scaling into 3D 0-1 valued array", file=sys.stdout):
         smooth_sequences[i, :len(seq)] += scaler.transform(seq)
     return smooth_sequences, scaler
+
+
+def _test_event_sequence_midi():
+    mid = mido.MidiFile('./input/midi/alb_esp1.mid')
+    event_sequence_to_midi(midi_to_event_sequence(mid)).save('./alb_esp1_out.mid')
+    mid = mido.MidiFile('./alb_esp1_out.mid')
+    mid.save('./alb_esp1_out2.mid')
 
 
 def _empty_directory(folder):
