@@ -107,12 +107,12 @@ def load_padded_input_event_sequences(basename='*') -> typing.Tuple[np.ndarray, 
         event_sequence = np.loadtxt(in_path, dtype=_dtype)
         scaler.partial_fit(event_sequence)
         jagged_sequences.append(event_sequence)
-
-    max_len = max(seq.shape[0] for seq in jagged_sequences)
-    smooth_sequences = np.zeros((len(jagged_sequences), max_len, 4), dtype=np.float32)
-    for i, seq in tqdm.tqdm(enumerate(jagged_sequences), desc="padding/scaling into 3D 0-1 valued array", file=sys.stdout):
-        smooth_sequences[i, :len(seq)] += scaler.transform(seq)
-    return smooth_sequences, scaler
+    return jagged_sequences
+    # max_len = max(seq.shape[0] for seq in jagged_sequences)
+    # smooth_sequences = np.zeros((len(jagged_sequences), max_len, 4), dtype=np.float32)
+    # for i, seq in tqdm.tqdm(enumerate(jagged_sequences), desc="padding/scaling into 3D 0-1 valued array", file=sys.stdout):
+    #     smooth_sequences[i, :len(seq)] += scaler.transform(seq)
+    # return smooth_sequences, scaler
 
 
 def _empty_directory(folder):
