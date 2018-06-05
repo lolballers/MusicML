@@ -12,19 +12,20 @@ hidden_dim = 500
 b_size = 128
 dropout = .2
 song_len = 500
-epochs_until_song = 15
+epochs_until_song = 1
 
 # List to store all the raw music files
 music_files = []
 
-# Read in all the files that music21 has
-for file in glob.glob("C:/Program Files/Python36/Lib/site-packages/music21/corpus/bach/*.mxl"):
+# Read in all the files that Music21 has
+# This is sketch but Music21 is broken on windows
+for file in glob.glob("C:/Users/peter/AppData/Local/Programs/Python/Python36/Lib/site-packages/music21/corpus/bach/*.mxl"):
     music_files.append(music21.converter.parse(file))
 
-for file in glob.glob("C:/Program Files/Python36/Lib/site-packages/music21/corpus/mozart/k155/*.mxl"):
+for file in glob.glob("C:/Users/peter/AppData/Local/Programs/Python/Python36/Lib/site-packages/music21/corpus/mozart/k155/*.mxl"):
     music_files.append(music21.converter.parse(file))
 
-for file in glob.glob("C:/Program Files/Python36/Lib/site-packages/music21/corpus/beethoven/*.mxl"):
+for file in glob.glob("C:/Users/peter/AppData/Local/Programs/Python/Python36/Lib/site-packages/music21/corpus/beethoven/*.mxl"):
     music_files.append(music21.converter.parse(file))
 
 # List to store all the note pitches (each as a string)
@@ -62,6 +63,9 @@ distinct_notes = len(pitch_names)
 # Two dictionaries for going between string pitch names and integer pitch indices
 note_to_int = {note: index for index, note in enumerate(pitch_names)}
 int_to_note = {index: note for index, note in enumerate(pitch_names)}
+
+print(len(notes))
+print(distinct_notes)
 
 # Two numpy arrays, one for the sequence_len input sequences and one for the single value expected
 # output for each of those sequences. Each of note value is stored as its one-hot representation
@@ -109,10 +113,10 @@ while True:
         pred_out.append(index)
 
         # Moves the input seed over one to the right
-        temp_pattern = np.zeros(pattern.shape)
-        temp_pattern[0:sequence_len - 1, :] = pattern[1:, :]
+        temp_pattern = np.zeros(seed.shape)
+        temp_pattern[0:sequence_len - 1, :] = seed[1:, :]
         temp_pattern[sequence_len - 1] = prediction
-        pattern = temp_pattern
+        seed = temp_pattern
 
     output_notes = []
 
